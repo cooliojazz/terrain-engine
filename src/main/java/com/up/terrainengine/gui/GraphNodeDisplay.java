@@ -29,12 +29,19 @@ import javax.swing.JOptionPane;
  */
 public class GraphNodeDisplay extends Panel {
     
-    private Operator o;
+//    private Label terminalLabel = new Label(); {
+//            setBackground(Color.BLUE);
+//            setBounds(0, 0, 200, 50);
+//        }
+    private Operator op;
+    private Color bgColor = Color.GRAY;
+    private Terminal selected;
+    private boolean showLabels = false;
 
-    public GraphNodeDisplay(Operator o) {
-        this.o = o;
+    public GraphNodeDisplay(Operator op) {
+        this.op = op;
         
-        setSize(120, Math.max(o.getInputs().size(), o.getOutputs().size()) * 20 + 10);
+        setSize(120, Math.max(op.getInputs().size(), op.getOutputs().size()) * 20 + 10);
         
         NodeMover nm = new NodeMover();
         addMouseListener(nm);
@@ -60,23 +67,20 @@ public class GraphNodeDisplay extends Panel {
 //        }
 //        add(outputs);
     }
-
-    private Color c = Color.GRAY;
-    private Terminal selected;
     
     @Override
     public void paint(Graphics g) {
-        g.setColor(c);
+        g.setColor(bgColor);
         g.fillRoundRect(0, 0, getWidth(), getHeight(), 5, 5);
         g.setColor(Color.BLACK);
         g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 5, 5);
-        g.setColor(o.needsUpdate() ? Color.RED : Color.GREEN);
+        g.setColor(op.needsUpdate() ? Color.RED : Color.GREEN);
         g.fillRect(getWidth() / 2 - 15, 5, 10, 5);
-        g.setColor(o.getLastResult() ? Color.GREEN : Color.RED);
+        g.setColor(op.getLastResult() ? Color.GREEN : Color.RED);
         g.fillRect(getWidth() / 2 + 15, 5, 10, 5);
         g.setColor(Color.BLACK);
-        g.drawString(o.getName(), getWidth() / 2 - g.getFontMetrics().stringWidth(o.getName()) / 2, getHeight() / 2 + 10);
-        List<Terminal> inputs = o.getInputs();
+        g.drawString(op.getName(), getWidth() / 2 - g.getFontMetrics().stringWidth(op.getName()) / 2, getHeight() / 2 + 10);
+        List<Terminal> inputs = op.getInputs();
         for (int i = 0; i < inputs.size(); i++) {
             Terminal t = inputs.get(i);
             if (t == selected) {
@@ -90,8 +94,14 @@ public class GraphNodeDisplay extends Panel {
                 g.setColor(Color.BLACK);
                 g.drawArc(-5, 10 + i * 20, 10, 10, -90, 180);
             }
+            if (showLabels) {
+                //TODO: Finish this
+                g.setColor(Color.BLACK);
+//                g.setClip(-g.getFontMetrics().stringWidth(t.getDescription()), getY(), getWidth(), getHeight());
+                g.drawString(t.getDescription(), -g.getFontMetrics().stringWidth(t.getDescription()), 10 + i * 20);
+            }
         }
-        List<Terminal> outputs = o.getOutputs();
+        List<Terminal> outputs = op.getOutputs();
         for (int i = 0; i < outputs.size(); i++) {
             Terminal t = outputs.get(i);
             if (t == selected) {
@@ -105,6 +115,11 @@ public class GraphNodeDisplay extends Panel {
                 g.setColor(Color.BLACK);
                 g.drawArc(getWidth() - 6, 10 + i * 20, 10, 10, 90, 180);
             }
+            if (showLabels) {
+                g.setColor(Color.BLACK);
+//                g.setClip(0, getY(), getWidth() + g.getFontMetrics().stringWidth(t.getDescription()), getHeight());
+                g.drawString(t.getDescription(), getWidth(), 10 + i * 20);
+            }
         }
     }
 
@@ -114,22 +129,22 @@ public class GraphNodeDisplay extends Panel {
     }
 
     public Operator getOperator() {
-        return o;
+        return op;
     }
     
     public boolean containsTerminal(Terminal t) {
-        return o.getTerminals().contains(t);
+        return op.getTerminals().contains(t);
     }
     
     public Point getTerminalPosition(Terminal t) {
         Point ret = null;
-        List<Terminal> inputs = o.getInputs();
+        List<Terminal> inputs = op.getInputs();
         for (int i = 0; i < inputs.size(); i++) {
             if (t == inputs.get(i)) {
                 ret = new Point(0, 15 + i * 20);
             }
         }
-        List<Terminal> outputs = o.getOutputs();
+        List<Terminal> outputs = op.getOutputs();
         for (int i = 0; i < outputs.size(); i++) {
             if (t == outputs.get(i)) {
                 ret = new Point(getWidth() - 1, 15 + i * 20);
@@ -157,9 +172,9 @@ public class GraphNodeDisplay extends Panel {
     }
     
     private void edit() {
-        final String initProps = o.getProperties().getJson();
-        PropertiesEditor editor = new PropertiesEditor(o, null, true, () -> {
-                if (!o.getProperties().getJson().equals(initProps)) {o.changed(); repaint();}
+        final String initProps = op.getProperties().getJson();
+        PropertiesEditor editor = new PropertiesEditor(op, null, true, () -> {
+                if (!op.getProperties().getJson().equals(initProps)) {op.changed(); repaint();}
             });
         editor.setVisible(true);
     }
@@ -175,7 +190,7 @@ public class GraphNodeDisplay extends Panel {
         d.add(new Label("Please wait while operators are computing..."));
         d.pack();
         d.setVisible(true);
-        o.update();
+        op.update();
         for (Component c : getParent().getComponents()) c.repaint();
         d.setVisible(false);
         d.dispose();
@@ -183,11 +198,11 @@ public class GraphNodeDisplay extends Panel {
     
     private void view() {
         Thread newContext = new Thread(() -> {
-            if (o.needsUpdate()) {
+            if (op.needsUpdate()) {
                 run();
             }
-            if (o instanceof ConvertToImage) {
-                Image i = ((ConvertToImage)o).getImage();
+            if (op instanceof ConvertToImage) {
+                Image i = ((ConvertToImage)op).getImage();
                 Dialog d = new Dialog((Frame)null);
                 Canvas c = new Canvas() {
                     @Override
@@ -207,7 +222,7 @@ public class GraphNodeDisplay extends Panel {
                         }
                     });
             }
-            if (o instanceof ConvertToMesh) {
+            if (op instanceof ConvertToMesh) {
 //                        Toolkit.getDefaultToolkit().
                 Frame f = new Frame();
                 DisplayManager dm = new DisplayManager() {
@@ -229,7 +244,7 @@ public class GraphNodeDisplay extends Panel {
                         renderString(Math.round(getFPS() * 10) / 10d + "fps", Color.red, new Point2D(20, 60));
                     }
                 };
-                dm.addMesh(((ConvertToMesh)o).getMesh());
+                dm.addMesh(((ConvertToMesh)op).getMesh());
                 dm.addLight(new Light(new Point3D(0, 100, 0), new float[] {1f, 1f, 1f, 1f}, 10000));
                 dm.zFar = 1000f;
                 dm.setAmbient(new float[] {0.25f, 0.25f, 0.25f, 1.0f});
@@ -341,9 +356,21 @@ public class GraphNodeDisplay extends Panel {
 
         @Override
         public void mouseMoved(MouseEvent e) {
+            showLabels = true;
             Terminal oldSelected = selected;
             selected = findTerminalFor(e.getPoint());
             if (oldSelected != selected) {
+//                //Why doens't this label exist? :(
+//                if (oldSelected != null) getParent().getParent().remove(terminalLabel);
+//                if (selected != null) {
+//                    terminalLabel.setText(selected.getDescription());
+////                    terminalLabel.setLocation(new Point(getParent().getX() + getX() + e.getX(), getParent().getY() + getY() + e.getY()));
+//                    getParent().getParent().add(terminalLabel);
+//                    getParent().getParent().setComponentZOrder(terminalLabel, 0);
+//                    terminalLabel.setBounds(0, 0, 200, 50);
+//                    System.out.println(terminalLabel.getParent());
+//                    System.out.println(terminalLabel.getBounds());
+//                }
                 repaint();
                 getParent().repaint();
             }
@@ -352,15 +379,16 @@ public class GraphNodeDisplay extends Panel {
         @Override
         public void mouseExited(MouseEvent e) {
             selected = null;
+            showLabels = true;
             repaint();
         }
         
         private Terminal findTerminalFor(Point p) {
-            List<Terminal> inputs = o.getInputs();
+            List<Terminal> inputs = op.getInputs();
             for (int i = 0; i < inputs.size(); i++) {
                 if (new Rectangle(0, i * 20 + 10, 5, 10).contains(p)) return inputs.get(i);
             }
-            List<Terminal> outputs = o.getOutputs();
+            List<Terminal> outputs = op.getOutputs();
             for (int i = 0; i < outputs.size(); i++) {
                 if (new Rectangle(getWidth() - 5, i * 20 + 10, 5, 10).contains(p)) return outputs.get(i);
             }

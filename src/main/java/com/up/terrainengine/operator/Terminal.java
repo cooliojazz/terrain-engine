@@ -67,8 +67,9 @@ public class Terminal<T extends Transferable> {
         if (link != null) {
             //Don't think this is working right
             getLink().getOutput().getParent().changed();
-            if (getMode() == Mode.INPUT) getLink().getOutput().setLink(null);
-            if (getMode() == Mode.OUTPUT) getLink().getInput().setLink(null);
+            //Clear the opposing link
+            if (getMode() == Mode.INPUT) getLink().getInput().setLink(null);
+            if (getMode() == Mode.OUTPUT) getLink().getOutput().setLink(null);
             setLink(null);
         }
     }

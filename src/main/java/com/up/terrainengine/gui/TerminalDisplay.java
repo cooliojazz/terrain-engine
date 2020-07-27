@@ -7,7 +7,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 /**
- *
+ * ********* UNUSED STUFF ***********
  * @author Ricky
  */
 public class TerminalDisplay extends Container {
