@@ -6,6 +6,7 @@ import com.up.terrainengine.operator.Terminal;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
@@ -47,6 +48,14 @@ public class GraphDisplay extends Panel {
     public void paint(Graphics g) {
         BufferedImage buffer = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics bg = buffer.getGraphics();
+        for (Component c : getComponents()) {
+            bg.translate(c.getX(), c.getY());
+//            bg.clipRect(0, 0, c.getWidth(), c.getHeight());
+            c.paint(bg);
+//            bg.setClip(null);
+            bg.translate(c.getX(), c.getY());
+        }
+//        super.paint(bg);
         if (linking != null) {
             bg.setColor(Color.YELLOW.darker());
             bg.drawLine(linking.source.getTerminalPosition(linking.start).x, linking.source.getTerminalPosition(linking.start).y, tracker.getLast().x, tracker.getLast().y);

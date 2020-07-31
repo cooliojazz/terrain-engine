@@ -13,12 +13,10 @@ import com.up.pe.render.camera.FreeTrackingCamera;
 import com.up.terrainengine.gui.GraphDisplay.Linking;
 import com.up.terrainengine.operator.operators.ConvertToImage;
 import com.up.terrainengine.operator.Operator;
-import com.up.terrainengine.operator.Properties;
 import com.up.terrainengine.operator.Terminal;
 import com.up.terrainengine.operator.Terminal.Mode;
 import com.up.terrainengine.operator.operators.ConvertToMesh;
 import java.awt.*;
-import java.awt.Dialog.ModalityType;
 import java.awt.event.*;
 import java.util.List;
 import javax.swing.JOptionPane;
@@ -27,21 +25,21 @@ import javax.swing.JOptionPane;
  *
  * @author Ricky
  */
-public class GraphNodeDisplay extends Panel {
+//public class GraphNodeDisplay extends Panel {
+public class GraphNodeDisplay extends Component {
     
-//    private Label terminalLabel = new Label(); {
-//            setBackground(Color.BLUE);
-//            setBounds(0, 0, 200, 50);
-//        }
     private Operator op;
     private Color bgColor = Color.GRAY;
     private Terminal selected;
     private boolean showLabels = false;
+    private int height;
 
     public GraphNodeDisplay(Operator op) {
         this.op = op;
+        enableEvents(AWTEvent.MOUSE_EVENT_MASK | AWTEvent.MOUSE_MOTION_EVENT_MASK);
         
-        setSize(120, Math.max(op.getInputs().size(), op.getOutputs().size()) * 20 + 10);
+        height = Math.max(op.getInputs().size(), op.getOutputs().size()) * 20 + 10;
+        setSize(120, height);
         
         NodeMover nm = new NodeMover();
         addMouseListener(nm);
@@ -66,6 +64,16 @@ public class GraphNodeDisplay extends Panel {
 //            if (start.getMode() == Mode.OUTPUT) outputs.add(new TerminalDisplay(start));
 //        }
 //        add(outputs);
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(120, height);
+    }
+
+    @Override
+    public Dimension getMinimumSize() {
+        return new Dimension(120, height);
     }
     
     @Override
@@ -303,7 +311,8 @@ public class GraphNodeDisplay extends Panel {
                         }
                     }
                 } else {
-                    getParent().dispatchEvent(new MouseEvent(GraphNodeDisplay.this, e.getID(), e.getWhen(), e.getModifiers(), getX() + e.getX(), getY() + e.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
+                    //This is a stack overflow now?
+//                    getParent().dispatchEvent(new MouseEvent(GraphNodeDisplay.this, e.getID(), e.getWhen(), e.getModifiers(), getX() + e.getX(), getY() + e.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
                 }
             }
         }
