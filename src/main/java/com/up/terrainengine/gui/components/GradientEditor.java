@@ -71,6 +71,12 @@ public class GradientEditor extends Panel {
         addSwatchSelector(s, getSwatchSelector(s));
     }
     
+    private void removeStop(Gradient.Stop s) {
+        remove(swatches.remove(s));
+        gradient.removeStop(s);
+        repaint();
+    }
+    
     private void changeStopColor(Gradient.Stop s) {
         Color newC = JColorChooser.showDialog(null, "Choose new color for stop at " + s.getPosition(), s.getColor());
         s.setColor(newC);
@@ -103,7 +109,11 @@ public class GradientEditor extends Panel {
         c.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    changeStopColor(s);
+                    if (e.getButton() == 1) {
+                        changeStopColor(s);
+                    } else {
+                        removeStop(s);
+                    }
                 }
             });
         return c;

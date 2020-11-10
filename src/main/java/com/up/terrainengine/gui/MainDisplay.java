@@ -204,11 +204,7 @@ public class MainDisplay extends Frame {
     }//GEN-LAST:event_addOperatorActionPerformed
 
     private void addButtonActionPerformed(ActionEvent evt) {//GEN-FIRST:event_addButtonActionPerformed
-        try {
-            addOperator(Class.forName(choice1.getSelectedItem()));
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(MainDisplay.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        addOperator(Operators.getOperators()[choice1.getSelectedIndex()]);
     }//GEN-LAST:event_addButtonActionPerformed
 
     private void cancelButtonActionPerformed(ActionEvent evt) {//GEN-FIRST:event_cancelButtonActionPerformed

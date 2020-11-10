@@ -29,6 +29,10 @@ public class Gradient {
         stops.add(stop);
     }
     
+    public void removeStop(Stop stop) {
+        stops.remove(stop);
+    }
+    
     public TreeSet<Stop> getStops() {
         return stops;
     }

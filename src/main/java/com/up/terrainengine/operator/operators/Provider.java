@@ -6,6 +6,7 @@ import com.up.terrainengine.operator.Properties;
 import com.up.terrainengine.operator.Terminal;
 import com.up.terrainengine.operator.Terminal.Mode;
 import com.up.terrainengine.operator.Transferable;
+import com.up.terrainengine.structures.Vector;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,6 +23,10 @@ public class Provider extends Operator {
     @Override
     public String getName() {
         return "Provider";
+    }
+
+    public Provider() {
+        this(new TypeReference<Vector<Double>>() {});
     }
 
     public <T extends Transferable> Provider(TypeReference<T> type) {

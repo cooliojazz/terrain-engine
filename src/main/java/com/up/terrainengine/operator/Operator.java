@@ -54,7 +54,7 @@ public abstract class Operator {
         for (Terminal t : getTerminals()) {
             if (t.getMode() == Mode.INPUT) {
                 if (t.getLink() != null) {
-                    return t.getLink().needsUpdate();
+                    if (t.getLink().needsUpdate()) return true;
                 }
             }
         }

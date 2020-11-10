@@ -1,10 +1,12 @@
 package com.up.terrainengine.structures;
 
+import com.up.terrainengine.operator.Transferable;
+
 /**
  *
  * @author Ricky
  */
-public class Vector<T> {
+public class Vector<T> implements Transferable {
     
     private Object[] vec;
 

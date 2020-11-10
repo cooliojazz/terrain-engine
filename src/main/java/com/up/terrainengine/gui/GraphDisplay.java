@@ -19,6 +19,7 @@ public class GraphDisplay extends Panel {
     private ArrayList<GraphNodeDisplay> nodes = new ArrayList<>();
     Linking linking = null;
     private MouseTracker tracker = new MouseTracker();
+    private SubMouseTracker subTracker = new SubMouseTracker();
 
     public GraphDisplay() {
         super(null);
@@ -33,6 +34,7 @@ public class GraphDisplay extends Panel {
     
     public void addNode(Operator o) {
         GraphNodeDisplay node = new GraphNodeDisplay(o);
+        node.addMouseMotionListener(subTracker);
         add(node);
         nodes.add(node);
     }
@@ -48,12 +50,14 @@ public class GraphDisplay extends Panel {
     public void paint(Graphics g) {
         BufferedImage buffer = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics bg = buffer.getGraphics();
+        bg.setColor(Color.white);
+        bg.fillRect(0, 0, getWidth(), getHeight());
         for (Component c : getComponents()) {
             bg.translate(c.getX(), c.getY());
 //            bg.clipRect(0, 0, c.getWidth(), c.getHeight());
             c.paint(bg);
 //            bg.setClip(null);
-            bg.translate(c.getX(), c.getY());
+            bg.translate(-c.getX(), -c.getY());
         }
 //        super.paint(bg);
         if (linking != null) {
@@ -78,7 +82,6 @@ public class GraphDisplay extends Panel {
                 }
             }
         }
-        g.clearRect(0, 0, getWidth(), getHeight());
         g.drawImage(buffer, 0, 0, null);
     }
 
@@ -108,17 +111,10 @@ public class GraphDisplay extends Panel {
         public void mouseDragged(MouseEvent e) {
             last = e.getPoint();
             for (GraphNodeDisplay node : nodes) {
-                if (node.getBounds().contains(e.getPoint()) && e.getSource() != node) node.dispatchEvent(new MouseEvent(GraphDisplay.this, e.getID(), e.getWhen(), e.getModifiers(), e.getX() - node.getX(), e.getY() - node.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
+                if (node.getBounds().contains(e.getPoint()) && e.getSource() != node) node.dispatchEvent(new MouseEvent(node, e.getID(), e.getWhen(), e.getModifiers(), e.getX() - node.getX(), e.getY() - node.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
             }
             repaint();
         }
-
-//        @Override
-//        public void mouseReleased(MouseEvent e) {
-//            for (GraphNodeDisplay node : nodes) {
-//                if (node.getBounds().contains(e.getPoint()) && e.getSource() != node) node.dispatchEvent(new MouseEvent(GraphDisplay.this, e.getID(), e.getWhen(), e.getModifiers(), e.getX() - node.getX(), e.getY() - node.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
-//            }
-//        }
         
         @Override
         public void mouseMoved(MouseEvent e) {
@@ -128,6 +124,20 @@ public class GraphDisplay extends Panel {
 
         public Point getLast() {
             return last;
+        }
+        
+    }
+    
+    private class SubMouseTracker extends MouseAdapter {
+        
+        @Override
+        public void mouseDragged(MouseEvent e) {
+            tracker.mouseDragged(new MouseEvent((Component)e.getSource(), e.getID(), e.getWhen(), e.getModifiers(), ((Component)e.getSource()).getX() + e.getX(), ((Component)e.getSource()).getY() + e.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
+        }
+        
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            tracker.mouseMoved(new MouseEvent((Component)e.getSource(), e.getID(), e.getWhen(), e.getModifiers(), ((Component)e.getSource()).getX() + e.getX(), ((Component)e.getSource()).getY() + e.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
         }
         
     }

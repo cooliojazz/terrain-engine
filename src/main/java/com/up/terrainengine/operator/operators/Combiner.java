@@ -56,6 +56,10 @@ public class Combiner extends Operator {
                             v.set(i, Math.max(Math.min(terminals[0].getState().get(x, y).get(i) * terminals[1].getState().get(x, y).get(i), 1), 0));
                             break;
                         }
+                        case SUBTRACT: {
+                            v.set(i, Math.max(Math.min(terminals[0].getState().get(x, y).get(i) - terminals[1].getState().get(x, y).get(i), 1), 0));
+                            break;
+                        }
                     }
                     
                 }
@@ -71,7 +75,7 @@ public class Combiner extends Operator {
         return props;
     }
     
-    public static enum Type {ADD, AVERAGE, MULTIPLY}
+    public static enum Type {ADD, AVERAGE, MULTIPLY, SUBTRACT}
     
     private class CombinerProperties extends Properties {
 

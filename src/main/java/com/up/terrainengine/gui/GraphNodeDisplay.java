@@ -36,7 +36,6 @@ public class GraphNodeDisplay extends Component {
 
     public GraphNodeDisplay(Operator op) {
         this.op = op;
-        enableEvents(AWTEvent.MOUSE_EVENT_MASK | AWTEvent.MOUSE_MOTION_EVENT_MASK);
         
         height = Math.max(op.getInputs().size(), op.getOutputs().size()) * 20 + 10;
         setSize(120, height);
@@ -45,25 +44,6 @@ public class GraphNodeDisplay extends Component {
         addMouseListener(nm);
         addMouseMotionListener(nm);
         
-//        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-        
-//        Panel inputs = new Panel();
-//        inputs.setLayout(new BoxLayout(inputs, BoxLayout.Y_AXIS));
-//        for (Terminal start : o.getTerminals()) {
-//            if (start.getMode() == Mode.INPUT) inputs.add(new TerminalDisplay(start));
-//        }
-//        add(inputs);
-//        
-//        Label text = new Label(o.getClass().getSimpleName());
-//        add(text);
-//        cleanChild(text);
-//        
-//        Panel outputs = new Panel();
-//        outputs.setLayout(new BoxLayout(outputs, BoxLayout.Y_AXIS));
-//        for (Terminal start : o.getTerminals()) {
-//            if (start.getMode() == Mode.OUTPUT) outputs.add(new TerminalDisplay(start));
-//        }
-//        add(outputs);
     }
 
     @Override
@@ -103,10 +83,8 @@ public class GraphNodeDisplay extends Component {
                 g.drawArc(-5, 10 + i * 20, 10, 10, -90, 180);
             }
             if (showLabels) {
-                //TODO: Finish this
                 g.setColor(Color.BLACK);
-//                g.setClip(-g.getFontMetrics().stringWidth(t.getDescription()), getY(), getWidth(), getHeight());
-                g.drawString(t.getDescription(), -g.getFontMetrics().stringWidth(t.getDescription()), 10 + i * 20);
+                g.drawString(t.getDescription(), -g.getFontMetrics().stringWidth(t.getDescription()) - 5, 15 + i * 20);
             }
         }
         List<Terminal> outputs = op.getOutputs();
@@ -125,8 +103,7 @@ public class GraphNodeDisplay extends Component {
             }
             if (showLabels) {
                 g.setColor(Color.BLACK);
-//                g.setClip(0, getY(), getWidth() + g.getFontMetrics().stringWidth(t.getDescription()), getHeight());
-                g.drawString(t.getDescription(), getWidth(), 10 + i * 20);
+                g.drawString(t.getDescription(), getWidth() + 5, 15 + i * 20);
             }
         }
     }
@@ -299,21 +276,19 @@ public class GraphNodeDisplay extends Component {
                 repaint();
                 getParent().repaint();
             } else if (parent.linking != null) {
-                if (e.getSource() == getParent()) {
-                    Terminal oldSelected = selected;
-                    selected = findTerminalFor(e.getPoint());
+                showLabels = true;
+                Terminal oldSelected = selected;
+                selected = findTerminalFor(e.getPoint());
+                if (oldSelected != selected) {
                     if (selected != null) {
                         if ((parent.linking.start.getMode() == Mode.INPUT && selected.getMode() == Mode.OUTPUT) || (parent.linking.start.getMode() == Mode.OUTPUT && selected.getMode() == Mode.INPUT)) {
                             ((GraphDisplay)getParent()).linking.end = selected;
-                            if (oldSelected != selected) repaint();
                         } else {
                             selected = null;
                         }
                     }
-                } else {
-                    //This is a stack overflow now?
-//                    getParent().dispatchEvent(new MouseEvent(GraphNodeDisplay.this, e.getID(), e.getWhen(), e.getModifiers(), getX() + e.getX(), getY() + e.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
                 }
+                repaint();
             }
         }
 
@@ -338,7 +313,6 @@ public class GraphNodeDisplay extends Component {
 
         @Override
         public void mouseReleased(MouseEvent e) {
-//            getParent().dispatchEvent(new MouseEvent(GraphNodeDisplay.this, e.getID(), e.getWhen(), e.getModifiers(), getX() + e.getX(), getY() + e.getY(), e.getClickCount(), e.isPopupTrigger(), e.getButton()));
             GraphDisplay parent = (GraphDisplay)getParent();
             last = null;
             if (moving) {
@@ -365,30 +339,19 @@ public class GraphNodeDisplay extends Component {
 
         @Override
         public void mouseMoved(MouseEvent e) {
-            showLabels = true;
-            Terminal oldSelected = selected;
             selected = findTerminalFor(e.getPoint());
-            if (oldSelected != selected) {
-//                //Why doens't this label exist? :(
-//                if (oldSelected != null) getParent().getParent().remove(terminalLabel);
-//                if (selected != null) {
-//                    terminalLabel.setText(selected.getDescription());
-////                    terminalLabel.setLocation(new Point(getParent().getX() + getX() + e.getX(), getParent().getY() + getY() + e.getY()));
-//                    getParent().getParent().add(terminalLabel);
-//                    getParent().getParent().setComponentZOrder(terminalLabel, 0);
-//                    terminalLabel.setBounds(0, 0, 200, 50);
-//                    System.out.println(terminalLabel.getParent());
-//                    System.out.println(terminalLabel.getBounds());
-//                }
-                repaint();
-                getParent().repaint();
-            }
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+            showLabels = true;
+            repaint();
         }
 
         @Override
         public void mouseExited(MouseEvent e) {
             selected = null;
-            showLabels = true;
+            showLabels = false;
             repaint();
         }
         
