@@ -231,7 +231,7 @@ public class GraphNodeDisplay extends Component {
                 };
                 dm.addMesh(((ConvertToMesh)op).getMesh());
                 dm.addLight(new Light(new Point3D(0, 100, 0), new float[] {1f, 1f, 1f, 1f}, 10000));
-                dm.zFar = 1000f;
+                dm.setRenderDistance(1000f);
                 dm.setAmbient(new float[] {0.25f, 0.25f, 0.25f, 1.0f});
 
                 GLCapabilities cap = new GLCapabilities(GLProfile.getDefault());
