@@ -50,7 +50,7 @@ public class PolynomialMap {
             }
             yp += p * is.getValue();
         }
-        return yp;
+        return Math.max(0, Math.min(1, yp));
     }
     
     public static class ControlPoint implements Comparable<ControlPoint> {
