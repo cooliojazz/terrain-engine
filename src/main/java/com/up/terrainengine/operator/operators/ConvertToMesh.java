@@ -2,7 +2,6 @@ package com.up.terrainengine.operator.operators;
 
 import com.up.pe.math.Angle3D;
 import com.up.pe.math.Point3D;
-import com.up.pe.math.Triangle;
 import com.up.pe.math.Vector3D;
 import com.up.pe.mesh.Mesh;
 import com.up.pe.mesh.MeshGrouper;
@@ -12,15 +11,9 @@ import com.up.pe.render.Vertex;
 import com.up.terrainengine.util.TypeReference;
 import com.up.terrainengine.operator.Operator;
 import com.up.terrainengine.operator.Properties;
-import com.up.terrainengine.operator.Terminal;
-import com.up.terrainengine.operator.Terminal.Mode;
-import com.up.terrainengine.structures.Vector;
+import com.up.terrainengine.operator.terminal.TerminalDefinition;
+import com.up.terrainengine.operator.terminal.TerminalMode;
 import com.up.terrainengine.structures.VectorMap;
-import java.awt.Color;
-import java.awt.Image;
-import java.awt.image.BufferedImage;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  *
@@ -28,25 +21,23 @@ import java.util.List;
  */
 public class ConvertToMesh extends Operator {
     
-    private Terminal[] terminals = new Terminal[] {
-            new Terminal<>(new TypeReference<VectorMap<Double>>() {}, this, Mode.INPUT, "Input")
-        };
+    private static TerminalDefinition<VectorMap<Double>> inputTerminal = new TerminalDefinition<>(new TypeReference<VectorMap<Double>>() {}, TerminalMode.INPUT, "Input");
+    
 //    private ImageProperties props = new ImageProperties();
     private Mesh mesh;
 
+	public ConvertToMesh() {
+		super(new Properties(), inputTerminal);
+	}
+	
     @Override
     public String getName() {
         return "Convert To Mesh";
     }
 
     @Override
-    public List<Terminal> getTerminals() {
-        return Arrays.asList(terminals);
-    }
-
-    @Override
     public boolean operate() {
-        VectorMap<Double> in = (VectorMap<Double>)terminals[0].getState();
+        VectorMap<Double> in = getTerminal(inputTerminal).getState();
         int size = in.size();
         double[][] heightmap = new double[size][size];
         for (int x = 0; x < size; x++) {
@@ -60,11 +51,6 @@ public class ConvertToMesh extends Operator {
 
     public Mesh getMesh() {
         return mesh;
-    }
-    
-    @Override
-    public Properties getProperties() {
-        return new Properties();
     }
 
 //    private class ImageProperties extends Properties {

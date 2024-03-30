@@ -3,11 +3,9 @@ package com.up.terrainengine.operator.operators;
 import com.up.terrainengine.util.TypeReference;
 import com.up.terrainengine.operator.Operator;
 import com.up.terrainengine.operator.Properties;
-import com.up.terrainengine.operator.Terminal;
-import com.up.terrainengine.operator.Terminal.Mode;
+import com.up.terrainengine.operator.terminal.TerminalDefinition;
+import com.up.terrainengine.operator.terminal.TerminalMode;
 import com.up.terrainengine.structures.VectorMap;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  *
@@ -15,9 +13,11 @@ import java.util.List;
  */
 public class Printer extends Operator {
     
-    private Terminal<VectorMap>[] terminals = new Terminal[] {
-            new Terminal<>(new TypeReference<VectorMap>() {}, this, Mode.INPUT, "Printable")
-        };
+    private static TerminalDefinition<VectorMap<Double>> input = new TerminalDefinition<>(new TypeReference<VectorMap<Double>>() {}, TerminalMode.INPUT, "Printable");
+
+    public Printer() {
+		super(new Properties(), input);
+	}
 
     @Override
     public String getName() {
@@ -25,19 +25,9 @@ public class Printer extends Operator {
     }
 
     @Override
-    public List<Terminal> getTerminals() {
-        return Arrays.asList(terminals);
-    }
-
-    @Override
     public boolean operate() {
-        System.out.println(terminals[0].getState().toString());
+        System.out.println(getTerminal(input).getState().toString());
         return true;
-    }
-
-    @Override
-    public Properties getProperties() {
-        return new Properties();
     }
     
 }

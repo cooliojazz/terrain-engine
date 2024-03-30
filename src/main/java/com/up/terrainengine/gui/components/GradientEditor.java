@@ -18,8 +18,9 @@ public class GradientEditor extends Panel {
     
     private Gradient gradient;
     private HashMap<Stop, Canvas> swatches = new HashMap<>();
+	private Runnable setUpdated;
 
-    public GradientEditor(Gradient g) {
+    public GradientEditor(Gradient g, Runnable setUpdated) {
         this.gradient = g;
         setLayout(null);
         setMinimumSize(new Dimension(100, 50));
@@ -33,6 +34,7 @@ public class GradientEditor extends Panel {
                     addStop((double)e.getX() / getWidth());
                 }
             });
+		this.setUpdated = setUpdated;
     }
 
     @Override
@@ -69,19 +71,26 @@ public class GradientEditor extends Panel {
         Stop s = new Stop(initColor, location);
         gradient.addStop(s);
         addSwatchSelector(s, getSwatchSelector(s));
+		setUpdated.run();
     }
     
     private void removeStop(Gradient.Stop s) {
-        remove(swatches.remove(s));
-        gradient.removeStop(s);
-        repaint();
+		if (gradient.getStops().first() != s && gradient.getStops().last() != s) {
+			remove(swatches.remove(s));
+			gradient.removeStop(s);
+			repaint();
+		}
+		setUpdated.run();
     }
     
     private void changeStopColor(Gradient.Stop s) {
         Color newC = JColorChooser.showDialog(null, "Choose new color for stop at " + s.getPosition(), s.getColor());
-        s.setColor(newC);
-        swatches.get(s).repaint();
-        repaint();
+        if (newC != null) {
+			s.setColor(newC);
+			swatches.get(s).repaint();
+			repaint();
+			setUpdated.run();
+		}
     }
     
     private void addSwatchSelector(Stop s, Canvas swatch) {
@@ -101,7 +110,7 @@ public class GradientEditor extends Panel {
             public void paint(Graphics g) {
                 g.setColor(s.getColor());
                 g.fillRect(0, 0, 19, 19);
-                g.setColor(Color.BLACK);
+                g.setColor(new Color(255 - s.getColor().getRed(), 255 - s.getColor().getGreen(), 255 - s.getColor().getBlue()).darker());
                 g.drawRect(0, 0, 19, 19);
             }
         };

@@ -3,15 +3,14 @@ package com.up.terrainengine.operator.operators;
 import com.up.terrainengine.util.TypeReference;
 import com.up.terrainengine.operator.Operator;
 import com.up.terrainengine.operator.Properties;
-import com.up.terrainengine.operator.Terminal;
-import com.up.terrainengine.operator.Terminal.Mode;
+import com.up.terrainengine.operator.terminal.Terminal;
 import com.up.terrainengine.operator.Transferable;
 import com.up.terrainengine.structures.Vector;
 import java.util.Collections;
 import java.util.List;
 
 /**
- *
+ * Broken after saving changes. Determine how to handle dynamic terminal types now from this.
  * @author Ricky
  */
 public class Provider extends Operator {
@@ -26,16 +25,17 @@ public class Provider extends Operator {
     }
 
     public Provider() {
-        this(new TypeReference<Vector<Double>>() {});
+//        this(new TypeReference<Vector<Double>>() {});
+		super(new Properties());
     }
 
-    public <T extends Transferable> Provider(TypeReference<T> type) {
-        terminal = new Terminal<>(type, this, Mode.OUTPUT, "Provided");
-        this.type = type;
-        props = new ProviderProperties();
-        //TODO: Fix
-        props.setValue(null);
-    }
+//    public <T extends Transferable> Provider(TypeReference<T> type) {
+//        terminal = new Terminal<>(type, this, Mode.OUTPUT, "Provided");
+//        this.type = type;
+//        props = new ProviderProperties();
+//        //TODO: Fix
+//        props.setValue(null);
+//    }
 
     @Override
     public List<Terminal> getTerminals() {

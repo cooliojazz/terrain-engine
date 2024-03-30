@@ -3,12 +3,10 @@ package com.up.terrainengine.operator.operators;
 import com.up.terrainengine.util.TypeReference;
 import com.up.terrainengine.operator.Operator;
 import com.up.terrainengine.operator.Properties;
-import com.up.terrainengine.operator.Terminal;
-import com.up.terrainengine.operator.Terminal.Mode;
+import com.up.terrainengine.operator.terminal.TerminalDefinition;
+import com.up.terrainengine.operator.terminal.TerminalMode;
 import com.up.terrainengine.structures.Vector;
 import com.up.terrainengine.structures.VectorMap;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  *
@@ -16,14 +14,14 @@ import java.util.List;
  */
 public class HydraulicErosion extends Operator {
     
-    private Terminal<VectorMap<Double>>[] terminals = new Terminal[] {
-            new Terminal<>(new TypeReference<VectorMap<Double>>() {}, this, Mode.INPUT, "In"),
-            new Terminal<>(new TypeReference<VectorMap<Double>>() {}, this, Mode.OUTPUT, "Height Map"),
-            new Terminal<>(new TypeReference<VectorMap<Double>>() {}, this, Mode.OUTPUT, "Water Map"),
-            new Terminal<>(new TypeReference<VectorMap<Double>>() {}, this, Mode.OUTPUT, "Sediment Map"),
-        };
+	private static TerminalDefinition<VectorMap<Double>> inTerminal = new TerminalDefinition<>(new TypeReference<VectorMap<Double>>() {}, TerminalMode.INPUT, "In");
+	private static TerminalDefinition<VectorMap<Double>> heightTerminal = new TerminalDefinition<>(new TypeReference<VectorMap<Double>>() {}, TerminalMode.OUTPUT, "Height Map");
+	private static TerminalDefinition<VectorMap<Double>> waterTerminal = new TerminalDefinition<>(new TypeReference<VectorMap<Double>>() {}, TerminalMode.OUTPUT, "Water Map");
+	private static TerminalDefinition<VectorMap<Double>> sedimentTerminal = new TerminalDefinition<>(new TypeReference<VectorMap<Double>>() {}, TerminalMode.OUTPUT, "Sediment Map");
     
-    private HydraulicErosionProperties props = new HydraulicErosionProperties();
+    public HydraulicErosion() {
+		super(new HydraulicErosionProperties(), inTerminal, heightTerminal, waterTerminal, sedimentTerminal);
+	}
 
     @Override
     public String getName() {
@@ -31,24 +29,20 @@ public class HydraulicErosion extends Operator {
     }
 
     @Override
-    public List<Terminal> getTerminals() {
-        return Arrays.asList(terminals);
-    }
-
-    @Override
     public boolean operate() {
-        int msize = terminals[0].getState().size();
+		VectorMap<Double> startmap = getTerminal(inTerminal).getState();
+        int msize = startmap.size();
         double[][] heightmap = new double[msize][msize];
         double[][] watermap = new double[msize][msize];
         double[][] sedimentmap = new double[msize][msize];
         for (int x = 0; x < msize; x++) {
             for (int y = 0; y < msize; y++) {
-                heightmap[x][y] = terminals[0].getState().get(x, y).get();
+                heightmap[x][y] = startmap.get(x, y).get();
                 watermap[x][y] = 0.001;
             }
         }
         
-        for (int i = 0; i < props.getGenerations(); i++) {
+        for (int i = 0; i < this.<HydraulicErosionProperties>getProperties().getGenerations(); i++) {
             double[][][] maps = runGeneration(heightmap, watermap, sedimentmap);
             heightmap = maps[0];
             watermap = maps[1];
@@ -65,9 +59,9 @@ public class HydraulicErosion extends Operator {
                 sedimentOut.set(x, y, new Vector<>(Math.max(Math.min(sedimentmap[x][y], 1), 0)));
             }
         }
-        terminals[1].setState(heightOut);
-        terminals[2].setState(waterOut);
-        terminals[3].setState(sedimentOut);
+        getTerminal(heightTerminal).setState(heightOut);
+        getTerminal(waterTerminal).setState(waterOut);
+        getTerminal(sedimentTerminal).setState(sedimentOut);
         return true;
     }
     
@@ -83,7 +77,7 @@ public class HydraulicErosion extends Operator {
                 double sediment = sedimentmap[x][y] + sedimentmapOut[x][y];
                 
                 //Rain
-                water = Math.min(1, water + 0.0001);
+                water = Math.min(1, water + this.<HydraulicErosionProperties>getProperties().getRain());
                 
                 //Gather sediment
                 if (sediment < water / 2) {
@@ -117,6 +111,9 @@ public class HydraulicErosion extends Operator {
                         }
                     }
                 }
+				
+				//Evaporation
+				water -= Math.max(0, this.<HydraulicErosionProperties>getProperties().getRain() / 2);
                 
                 //Update terrain
                 heightmapOut[x][y] = height;
@@ -132,16 +129,12 @@ public class HydraulicErosion extends Operator {
     private int[][] getAdjacentTiles(int x, int y) {
         return new int[][] {new int[] {x - 1, y}, new int[] {x - 1, y - 1}, new int[] {x, y - 1}, new int[] {x + 1, y - 1}, new int[] {x + 1, y}, new int[] {x + 1, y + 1}, new int[] {x, y + 1}, new int[] {x - 1, y + 1}, };
     }
-
-    @Override
-    public Properties getProperties() {
-        return props;
-    }
     
-    private class HydraulicErosionProperties extends Properties {
+    private static class HydraulicErosionProperties extends Properties {
 
         public HydraulicErosionProperties() {
             declareProperty("generations", new TypeReference<Integer>() {}, 10);
+            declareProperty("rain", new TypeReference<Double>() {}, 0.0001);
         }
         
         public int getGenerations() {
@@ -150,6 +143,14 @@ public class HydraulicErosion extends Operator {
         
         public void setGenerations(int gens) {
             set("generations", gens);
+        }
+        
+        public double getRain() {
+            return get("rain");
+        }
+        
+        public void setRain(int rain) {
+            set("rain", rain);
         }
     }
     

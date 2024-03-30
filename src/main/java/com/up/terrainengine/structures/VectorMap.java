@@ -3,7 +3,7 @@ package com.up.terrainengine.structures;
 import com.up.terrainengine.operator.Transferable;
 
 /**
- *
+ * A "Map" (two dimensional array of vectors) of {@link #T}s.
  * @author Ricky
  */
 public class VectorMap<T> implements Transferable {

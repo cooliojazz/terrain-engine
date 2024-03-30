@@ -15,6 +15,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.swing.BoxLayout;
 
 /**
@@ -24,12 +25,13 @@ import javax.swing.BoxLayout;
 public class PropertiesEditor extends java.awt.Dialog {
 
     private Properties props;
-    private Runnable onClose;
+    private Consumer<Boolean> onClose;
+	private boolean changed = false;
     
     /**
      * Creates new form PropertiesEditor
      */
-    public PropertiesEditor(Operator o, Frame parent, boolean modal, Runnable onClose) {
+    public PropertiesEditor(Operator o, Frame parent, boolean modal, Consumer<Boolean> onClose) {
         super(parent, modal);
         this.onClose = onClose;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -37,16 +39,17 @@ public class PropertiesEditor extends java.awt.Dialog {
         this.props = o.getProperties();
         initComponents();
         for (Map.Entry<String, Object> e : props) {
-            Panel row = new Panel();
-            row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-            row.add(new Label(e.getKey()));
-            row.add(getEditorFor(e.getKey(), e.getValue()));
-            add(row);
+			if (props.enabled(e.getKey())) {
+				Panel row = new Panel();
+				row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+				row.add(new Label(e.getKey()));
+				row.add(getEditorFor(e.getKey(), e.getValue()));
+				add(row);
+			}
         }
         setResizable(false);
         setMinimumSize(new Dimension(250, 10));
         pack();
-        o.changed();
     }
 
     /**
@@ -76,21 +79,26 @@ public class PropertiesEditor extends java.awt.Dialog {
     private void closeDialog(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_closeDialog
         setVisible(false);
         dispose();
-        onClose.run();
+        onClose.accept(changed);
     }//GEN-LAST:event_closeDialog
 
     
     private Component getEditorFor(String key, Object o) {
-        if (o.getClass().isEnum()) {
+		if (o.getClass().isEnum()) {
             Choice choice = new Choice();
             for (Object e : o.getClass().getEnumConstants()) {
                 choice.add(e.toString());
             }
             choice.select(o.toString());
-            choice.addItemListener(e -> props.set(key, Enum.valueOf((Class<? extends Enum>)o.getClass(), (String)e.getItem())));
+            choice.addItemListener(e -> {
+					if (!o.toString().equals(e.getItem())) {
+						props.set(key, Enum.valueOf((Class<? extends Enum>)o.getClass(), (String)e.getItem()));
+						changed = true;
+					}
+				});
             return choice;
         } else {
-            switch (props.getType(key).getType().getTypeName()) {
+            switch (props.getType(key).getType()) {
                 case "com.up.terrainengine.structures.VectorMap<java.lang.Double>": {
                     VectorMap<Double> map = (VectorMap<Double>)o;
                     
@@ -105,29 +113,38 @@ public class PropertiesEditor extends java.awt.Dialog {
                             int x = Integer.parseInt(field.getName().split(",")[0]);
                             int y = Integer.parseInt(field.getName().split(",")[1]);
                             map.set(x, y, new Vector<>(Double.parseDouble(field.getText())));
+							changed = true;
                         });
                     return table;
                 }
                 case "com.up.terrainengine.structures.Gradient": {
-                    return new GradientEditor((Gradient)props.get(key));
+                    return new GradientEditor((Gradient)props.get(key), () -> changed = true);
                 }
                 case "com.up.terrainengine.structures.PolynomialMap": {
-                    return new CurveEditor((PolynomialMap)props.get(key));
+                    return new CurveEditor((PolynomialMap)props.get(key), () -> changed = true);
                 }
                 case "java.lang.Double": {
                     TextField field = new TextField(((Double)props.get(key)).toString());
-                    field.addActionListener(e -> props.set(key, Double.parseDouble(field.getText())));
-                    field.addFocusListener(new FocusAdapter() {public void focusLost(FocusEvent e) {props.set(key, Double.parseDouble(field.getText()));}});
+                    field.addTextListener(e -> {
+							if (!field.getText().equals(props.get(key) + "")) {
+								props.set(key, Double.parseDouble(field.getText()));
+								changed = true;
+							}
+						});
                     return field;
                 }
                 case "java.lang.Integer": {
                     TextField field = new TextField(((Integer)props.get(key)).toString());
-                    field.addActionListener(e -> props.set(key, Integer.parseInt(field.getText())));
-                    field.addFocusListener(new FocusAdapter() {public void focusLost(FocusEvent e) {props.set(key, Integer.parseInt(field.getText()));}});
+                    field.addTextListener(e -> {
+							if (!field.getText().equals(props.get(key) + "")) {
+								props.set(key, Integer.parseInt(field.getText()));
+								changed = true;
+							}
+						});
                     return field;
                 }
                 default: {
-                    return new Label("(No editor for " + props.getType(key).getType().getTypeName() + ") " + o.toString());
+                    return new Label("(No editor for " + props.getType(key).getType() + ") " + o.toString());
                 }
             }
         }

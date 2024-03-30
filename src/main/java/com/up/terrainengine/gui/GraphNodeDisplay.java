@@ -1,21 +1,28 @@
 package com.up.terrainengine.gui;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GLCapabilities;
 import com.jogamp.opengl.GLProfile;
 import com.jogamp.opengl.awt.GLCanvas;
-import com.up.pe.event.MouseCameraAdapter;
+import com.up.pe.input.MouseFreeTrackingCameraAdapter;
 import com.up.pe.math.Point2D;
 import com.up.pe.math.Point3D;
 import com.up.pe.render.DisplayManager;
-import com.up.pe.render.Light;
 import com.up.pe.render.camera.FreeTrackingCamera;
+import com.up.pe.render.event.RenderInterceptorAdapter;
+import com.up.pe.render.light.PointLight;
 import com.up.terrainengine.gui.GraphDisplay.Linking;
 import com.up.terrainengine.operator.operators.ConvertToImage;
 import com.up.terrainengine.operator.Operator;
-import com.up.terrainengine.operator.Terminal;
-import com.up.terrainengine.operator.Terminal.Mode;
-import com.up.terrainengine.operator.operators.ConvertToMesh;
+import com.up.terrainengine.operator.terminal.Terminal;
+import com.up.terrainengine.operator.terminal.TerminalDefinition;
+import com.up.terrainengine.operator.terminal.TerminalMode;
+//import com.up.terrainengine.operator.operators.ConvertToMesh;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
@@ -26,14 +33,17 @@ import javax.swing.JOptionPane;
  * @author Ricky
  */
 //public class GraphNodeDisplay extends Panel {
+@JsonAutoDetect(isGetterVisibility = JsonAutoDetect.Visibility.NONE, fieldVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class GraphNodeDisplay extends Component {
     
+	@JsonProperty
     private Operator op;
     private Color bgColor = Color.GRAY;
     private Terminal selected;
     private boolean showLabels = false;
     private int height;
 
+	@JsonCreator
     public GraphNodeDisplay(Operator op) {
         this.op = op;
         
@@ -45,6 +55,18 @@ public class GraphNodeDisplay extends Component {
         addMouseMotionListener(nm);
         
     }
+
+	@Override
+	@JsonGetter
+	public Point getLocation() {
+		return super.getLocation();
+	}
+
+	@Override
+	@JsonSetter
+	public void setLocation(Point p) {
+		super.setLocation(p);
+	}
 
     @Override
     public Dimension getPreferredSize() {
@@ -84,7 +106,7 @@ public class GraphNodeDisplay extends Component {
             }
             if (showLabels) {
                 g.setColor(Color.BLACK);
-                g.drawString(t.getDescription(), -g.getFontMetrics().stringWidth(t.getDescription()) - 5, 15 + i * 20);
+                g.drawString(t.getDefinition().getDescription(), -g.getFontMetrics().stringWidth(t.getDefinition().getDescription()) - 5, 15 + i * 20);
             }
         }
         List<Terminal> outputs = op.getOutputs();
@@ -103,7 +125,7 @@ public class GraphNodeDisplay extends Component {
             }
             if (showLabels) {
                 g.setColor(Color.BLACK);
-                g.drawString(t.getDescription(), getWidth() + 5, 15 + i * 20);
+                g.drawString(t.getDefinition().getDescription(), getWidth() + 5, 15 + i * 20);
             }
         }
     }
@@ -157,9 +179,13 @@ public class GraphNodeDisplay extends Component {
     }
     
     private void edit() {
-        final String initProps = op.getProperties().getJson();
-        PropertiesEditor editor = new PropertiesEditor(op, null, true, () -> {
-                if (!op.getProperties().getJson().equals(initProps)) {op.changed(); repaint();}
+//        final String initProps = op.getProperties().getJson();
+        PropertiesEditor editor = new PropertiesEditor(op, null, true, changed -> {
+//                if (!op.getProperties().getJson().equals(initProps)) {op.changed(); repaint();}
+                if (changed) {
+					op.changed();
+					repaint();
+				}
             });
         editor.setVisible(true);
     }
@@ -187,17 +213,34 @@ public class GraphNodeDisplay extends Component {
                 run();
             }
             if (op instanceof ConvertToImage) {
-                Image i = ((ConvertToImage)op).getImage();
                 Dialog d = new Dialog((Frame)null);
+				Panel p = new Panel(new BorderLayout());
+				d.add(p);
+				
                 Canvas c = new Canvas() {
                     @Override
                     public void paint(Graphics g) {
                         g.fillRect(0, 0, getWidth(), getHeight());
+						Image i = ((ConvertToImage)op).getImage();
                         g.drawImage(i, 0, 0, getWidth(), getHeight(), null);
                     }
+
+					@Override
+					public void update(Graphics g) {
+						paint(g);
+					}
                 };
+                Image i = ((ConvertToImage)op).getImage();
                 c.setSize(i.getWidth(null), i.getHeight(null));
-                d.add(c);
+                p.add(c, BorderLayout.CENTER);
+				
+				Button b = new Button("Refresh");
+				b.addActionListener(e -> {
+						run();
+						c.repaint();
+					});
+				p.add(b, BorderLayout.SOUTH);
+				
                 d.pack();
                 d.setVisible(true);
                 d.addWindowListener(new WindowAdapter() {
@@ -207,52 +250,48 @@ public class GraphNodeDisplay extends Component {
                         }
                     });
             }
-            if (op instanceof ConvertToMesh) {
-//                        Toolkit.getDefaultToolkit().
-                Frame f = new Frame();
-                DisplayManager dm = new DisplayManager() {
-                    @Override
-                    public void preTranslation(GL2 gl) {
-                    }
-
-                    @Override
-                    public void preRotation(GL2 gl) {
-                    }
-
-                    @Override
-                    public void preRender(GL2 gl) {
-                        drawAxis(gl, 100);
-                    }
-
-                    @Override
-                    public void postRender(GL2 gl) {
-                        renderString(Math.round(getFPS() * 10) / 10d + "fps", Color.red, new Point2D(20, 60));
-                    }
-                };
-                dm.addMesh(((ConvertToMesh)op).getMesh());
-                dm.addLight(new Light(new Point3D(0, 100, 0), new float[] {1f, 1f, 1f, 1f}, 10000));
-                dm.setRenderDistance(1000f);
-                dm.setAmbient(new float[] {0.25f, 0.25f, 0.25f, 1.0f});
-
-                GLCapabilities cap = new GLCapabilities(GLProfile.getDefault());
-        //        cap.setSampleBuffers(true);
-                GLCanvas c = dm.getCanvas(cap);
-                FreeTrackingCamera camera = new FreeTrackingCamera(Point3D::zeros);
-                dm.setCamera(camera);
-                new MouseCameraAdapter(camera).addToComponent(c);
-                f.add(c);
-
-//                    f.pack();
-                f.setSize(500, 500);
-                f.setVisible(true);
-                f.addWindowListener(new WindowAdapter() {
-                        @Override
-                        public void windowClosing(WindowEvent e) {
-                            f.setVisible(false);
-                        }
-                    });
-                dm.startDefaultRenderLoop();
-            }
+//            if (op instanceof ConvertToMesh) {
+////                        Toolkit.getDefaultToolkit().
+//                Frame f = new Frame();
+//                DisplayManager dm = new DisplayManager(new RenderInterceptorAdapter() {
+//                    @Override
+//                    public void preTransformation(DisplayManager dm, GL2 gl) {
+//                    }
+//
+//                    @Override
+//                    public void preRender(DisplayManager dm, GL2 gl) {
+//                        dm.drawAxis(gl, 100);
+//                    }
+//
+//                    @Override
+//                    public void postRender(DisplayManager dm, GL2 gl) {
+//                        dm.renderString(gl, Math.round(dm.getFPS() * 10) / 10d + "fps", Color.red, new Point2D(20, 60), 12);
+//                    }
+//                });
+//                dm.addMesh(((ConvertToMesh)op).getMesh());
+//                dm.addLight(new PointLight(new Point3D(0, 100, 0), new float[] {1f, 1f, 1f, 1f}, 10000));
+//                dm.setRenderDistance(1000f);
+//                dm.setAmbient(new float[] {0.25f, 0.25f, 0.25f, 1.0f});
+//
+//                GLCapabilities cap = new GLCapabilities(GLProfile.getDefault());
+//        //        cap.setSampleBuffers(true);
+//                GLCanvas c = dm.getCanvas(cap);
+//                FreeTrackingCamera camera = new FreeTrackingCamera(Point3D::zeros);
+//                dm.setCamera(camera);
+//                new MouseFreeTrackingCameraAdapter(camera).addToComponent(c);
+//                f.add(c);
+//
+////                    f.pack();
+//                f.setSize(500, 500);
+//                f.setVisible(true);
+//                f.addWindowListener(new WindowAdapter() {
+//                        @Override
+//                        public void windowClosing(WindowEvent e) {
+//                            f.setVisible(false);
+//                        }
+//                    });
+//                dm.startDefaultRenderLoop();
+//            }
         });
         newContext.start();
     }
@@ -281,7 +320,8 @@ public class GraphNodeDisplay extends Component {
                 selected = findTerminalFor(e.getPoint());
                 if (oldSelected != selected) {
                     if (selected != null) {
-                        if ((parent.linking.start.getMode() == Mode.INPUT && selected.getMode() == Mode.OUTPUT) || (parent.linking.start.getMode() == Mode.OUTPUT && selected.getMode() == Mode.INPUT)) {
+                        if ((parent.linking.start.getDefinition().getMode() == TerminalMode.INPUT && selected.getDefinition().getMode() == TerminalMode.OUTPUT) ||
+								(parent.linking.start.getDefinition().getMode() == TerminalMode.OUTPUT && selected.getDefinition().getMode() == TerminalMode.INPUT)) {
                             ((GraphDisplay)getParent()).linking.end = selected;
                         } else {
                             selected = null;
@@ -319,7 +359,7 @@ public class GraphNodeDisplay extends Component {
                 moving = false;
             } else if (parent.linking != null) {
                 if (parent.linking.end != null) {
-                    if (parent.linking.start.getMode() == Mode.OUTPUT) {
+                    if (parent.linking.start.getDefinition().getMode() == TerminalMode.OUTPUT) {
                         parent.linking.start.linkTo(parent.linking.end);
                     } else {
                         parent.linking.end.linkTo(parent.linking.start);

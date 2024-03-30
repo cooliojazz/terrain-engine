@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+//import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.up.terrainengine.util.TypeReference;
@@ -14,7 +14,14 @@ import com.up.terrainengine.operator.Operators;
 import com.up.terrainengine.structures.VectorMap;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -36,7 +43,9 @@ public class MainDisplay extends Frame {
 
     private static ObjectMapper mapper = new ObjectMapper();
     static {
-        mapper.activateDefaultTyping(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build());
+		mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+//        mapper.activateDefaultTyping(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build());
+//        mapper.activateDefaultTypingAsProperty(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(), ObjectMapper.DefaultTyping.EVERYTHING, "_type");
         mapper.registerModule(new ParameterNamesModule(JsonCreator.Mode.PROPERTIES));
         SimpleModule colorMod = new SimpleModule("color");
         colorMod.addDeserializer(Color.class, new JsonDeserializer<Color>() {
@@ -66,7 +75,7 @@ public class MainDisplay extends Frame {
         label2 = new Label();
         choice1 = new Choice();
         Stream.of(Operators.getOperators())
-        .map((Class<? extends Operator> o) -> {
+        .map((o) -> {
             try {
                 return o.newInstance().getName();
             } catch (Exception e) {
@@ -126,7 +135,7 @@ public class MainDisplay extends Frame {
         addOperatorMenu.setActionCommand("Add Operator");
         addOperatorMenu.setLabel("Add Operator...");
         Stream.of(Operators.getOperators())
-        .map((Class<? extends Operator> o) -> {
+        .map((o) -> {
             String text;
             try {
                 text = o.newInstance().getName();
@@ -135,7 +144,7 @@ public class MainDisplay extends Frame {
                 text = "[Error building operator]";
             }
             MenuItem i = new MenuItem(text);
-            i.addActionListener((ActionEvent e) -> addOperator(o));
+            i.addActionListener((e) -> addOperator(o));
             return i;
         })
         .forEach(addOperatorMenu::add);
@@ -169,6 +178,11 @@ public class MainDisplay extends Frame {
         fileMenu.add(openFile);
 
         saveFile.setLabel("Save");
+        saveFile.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                saveFileActionPerformed(evt);
+            }
+        });
         fileMenu.add(saveFile);
 
         menuBar.add(fileMenu);
@@ -215,11 +229,14 @@ public class MainDisplay extends Frame {
         operatorsDialog.setVisible(false);
     }//GEN-LAST:event_operatorsDialogWindowClosing
 
+	// TODO: Finish saving and loading
     private void openFileActionPerformed(ActionEvent evt) {//GEN-FIRST:event_openFileActionPerformed
         try {
-            String json = mapper.writeValueAsString(graphDisplay.getNodes().stream().map(n -> n.getOperator()).toArray(Operator[]::new));
-            Operator[] os = mapper.readValue(json, Operator[].class);
-        } catch (JsonProcessingException ex) {
+			try (BufferedReader is = new BufferedReader(new InputStreamReader(new FileInputStream("save.json")))) {
+				new ArrayList<>(graphDisplay.getNodes()).forEach(graphDisplay::removeNode);
+				Arrays.asList(mapper.readValue(String.join("\n", is.lines().toList()), GraphNodeDisplay[].class)).forEach(graphDisplay::addNodeDisplay);
+			}
+        } catch (Exception ex) {
             Logger.getLogger(MainDisplay.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_openFileActionPerformed
@@ -230,6 +247,17 @@ public class MainDisplay extends Frame {
             rightClickMenu.show(graphDisplay, evt.getX(), evt.getY());
         }
     }//GEN-LAST:event_graphDisplayMouseClicked
+
+    private void saveFileActionPerformed(ActionEvent evt) {//GEN-FIRST:event_saveFileActionPerformed
+        try {
+            String json = mapper.writeValueAsString(graphDisplay.getNodes());
+            try (OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream("save.json"))) {
+				os.write(json);
+			}
+        } catch (Exception ex) {
+            Logger.getLogger(MainDisplay.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_saveFileActionPerformed
 
     private void addOperator(Class oc) {
         try {

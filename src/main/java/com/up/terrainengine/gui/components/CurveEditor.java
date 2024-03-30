@@ -6,7 +6,6 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map.Entry;
 
 /**
@@ -17,8 +16,9 @@ public class CurveEditor extends Panel {
     
     private PolynomialMap map;
     private HashMap<ControlPoint, Canvas> points = new HashMap<>();
+	private Runnable setUpdated;
 
-    public CurveEditor(PolynomialMap m) {
+    public CurveEditor(PolynomialMap m, Runnable setUpdated) {
         this.map = m;
         setLayout(null);
         setMinimumSize(new Dimension(200, 200));
@@ -32,6 +32,7 @@ public class CurveEditor extends Panel {
                     addPoint((double)e.getX() / getWidth(), (double)(getHeight() - e.getY()) / getHeight());
                 }
             });
+		this.setUpdated = setUpdated;
     }
 
     @Override
@@ -66,6 +67,14 @@ public class CurveEditor extends Panel {
         map.addPoint(s);
         repaint();
         addPointMover(s, getPointMover(s));
+		setUpdated.run();
+    }
+    
+    private void removePoint(ControlPoint p, Canvas c) {
+		map.removePoint(p);
+		repaint();
+		remove(c);
+		setUpdated.run();
     }
     
     private void addPointMover(ControlPoint p, Canvas mover) {
@@ -94,9 +103,7 @@ public class CurveEditor extends Panel {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getButton() != 1) {
-                        map.removePoint(p);
-                        repaint();
-                        remove(c);
+						removePoint(p, c);
                     }
                 }
                 
